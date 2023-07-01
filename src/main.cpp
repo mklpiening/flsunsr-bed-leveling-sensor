@@ -3,20 +3,23 @@
 HX711 loadcell;
 
 const int MAX_VALUE = 800000;
-const double NOISE_FACTOR = 3.5;
-const int MIN_HIGH_STEPS = 4;
+const double NOISE_FACTOR = 3.5; // threshold
+const int MIN_HIGH_STEPS = 2;
 
 const int LOADCELL_DOUT_PIN = 3;
 const int LOADCELL_SCK_PIN = 2;
 
 const double NOISE_SMOOTHING = 0.999;
-const double LOAD_SMOOTHING = 0.5;
+const double LOAD_SMOOTHING = 0.7;
+
+const int KEEP_HIGH = 4;
 
 double last_value = 0.0; 
 
 double noise = 180.0;
 
 int high_steps = 0;
+int keep_high_steps = 0;
 
 double smoothed_value = 0.0;
 
@@ -32,9 +35,8 @@ void setup() {
 }
 
 void loop() {
-  double value = loadcell.get_value(1);
+  double value = loadcell.get_value(2);
   
-  high_steps++;
 
   if (abs(value) > MAX_VALUE)
   {
@@ -54,12 +56,25 @@ void loop() {
 
   if (-delta > NOISE_FACTOR * noise)
   {
-    digitalWrite(13, HIGH);
+    high_steps++;
+  }
+  else
+  {
     high_steps = 0;
   }
 
-  if (absdelta > NOISE_FACTOR * noise || high_steps < MIN_HIGH_STEPS)
+  if (high_steps >= MIN_HIGH_STEPS)
   {
+    digitalWrite(13, HIGH);
+    keep_high_steps = 0;
+    return;
+  }
+
+  // keep high signal for at least KEEP_HIGH
+  if (keep_high_steps < KEEP_HIGH)
+  {
+    digitalWrite(13, HIGH);
+    keep_high_steps++;
     return;
   }
 
