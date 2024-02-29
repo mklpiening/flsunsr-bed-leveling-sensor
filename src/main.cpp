@@ -12,6 +12,11 @@ const int LOADCELL_SCK_PIN = 2;
 const double NOISE_SMOOTHING = 0.999;
 const double LOAD_SMOOTHING = 0.7;
 
+const double ABS_THRESHOLD = 3000;
+
+const int TRIGGER_RESET_HIGH_STEPS = 200;
+int reset_high_steps = 0;
+
 const int KEEP_HIGH = 4;
 
 double last_value = 0.0; 
@@ -35,11 +40,26 @@ void setup() {
 }
 
 void loop() {
+  if (reset_high_steps > TRIGGER_RESET_HIGH_STEPS)
+  {
+    loadcell.tare(); 
+
+    smoothed_value = 0.0;
+    noise = 180.0;
+    high_steps = 0;
+    last_value = 0.0;
+    keep_high_steps = 0.0;
+
+    reset_high_steps = 0;
+    return;
+  }
+
   double value = loadcell.get_value(2);
   
 
   if (abs(value) > MAX_VALUE)
   {
+    reset_high_steps++;
     return;
   }
 
@@ -54,7 +74,7 @@ void loop() {
   Serial.print("noise:\t");
   Serial.println(NOISE_FACTOR * noise, 5);
 
-  if (-delta > NOISE_FACTOR * noise)
+  if (-delta > NOISE_FACTOR * noise || -smoothed_value > ABS_THRESHOLD)
   {
     high_steps++;
   }
@@ -63,9 +83,11 @@ void loop() {
     high_steps = 0;
   }
 
+
   if (high_steps >= MIN_HIGH_STEPS)
   {
     digitalWrite(13, HIGH);
+    reset_high_steps++;
     keep_high_steps = 0;
     return;
   }
@@ -74,10 +96,12 @@ void loop() {
   if (keep_high_steps < KEEP_HIGH)
   {
     digitalWrite(13, HIGH);
+    reset_high_steps++;
     keep_high_steps++;
     return;
   }
 
   digitalWrite(13, LOW);
+  reset_high_steps = 0;
   noise = NOISE_SMOOTHING * noise + (1.0 - NOISE_SMOOTHING) * absdelta;
 }
