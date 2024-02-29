@@ -14,7 +14,7 @@ const double LOAD_SMOOTHING = 0.7;
 
 const double ABS_THRESHOLD = 3000;
 
-const int TRIGGER_RESET_HIGH_STEPS = 200;
+const int TRIGGER_RESET_HIGH_STEPS = 100;
 int reset_high_steps = 0;
 
 const int KEEP_HIGH = 4;
